@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/learn_rabbitmq?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      test-while-idle: true
+      validation-query: SELECT 1
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    # 开启发送方确认
+    publisher-confirms: true
+    # 开启发送方退回
+    publisher-returns: true
+    listener:
+      simple:
+        # 开启消费者手动确认
+        acknowledge-mode: manual
+        # 消费失败后重新入队
+        default-requeue-rejected: false
+        # 并发消费者数量
+        concurrency: 5
+        # 最大并发消费者数量
+        max-concurrency: 10
+        # 预取消息数量
+        prefetch: 10
+
+mybatis-plus:
+  mapper-locations: classpath*:com/muzhou/learn/rabbitmq/**/xml/*.xml
+  type-aliases-package: com.muzhou.learn.rabbitmq.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

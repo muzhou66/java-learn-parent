@@ -25,6 +25,10 @@ public class OrderCreatConsumer {
 
     /**
      * 处理订单创建消息
+     *
+     * @param order   从消息体中反序列化得到的订单对象
+     * @param channel RabbitMQ 通道，用于手动确认消息
+     * @param tag     消息的投递标签，用于唯一标识消息
      */
     @RabbitListener(queues = RabbitMQConfig.ORDER_QUEUE)
     public void handleOrderCreateMessage(Order order, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag)
@@ -37,7 +41,7 @@ public class OrderCreatConsumer {
 
             // 这里可以添加实际的业务逻辑，如库存预占、优惠券核销等
 
-            // 手动确认消息
+            // 处理成功，手动确认消息
             channel.basicAck(tag, false);
             log.info("订单创建消息处理完成, 订单ID: {}", order.getId());
         } catch (Exception e) {

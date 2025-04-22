@@ -124,13 +124,18 @@ public class RabbitMQConfig {
         });
 
         // 消息从交换机发送到队列失败回调
-        template.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-            log.error("消息从交换机发送到队列失败, 交换机: {}, 路由键: {}, 消息: {}, 失败原因: {}",
-                    exchange, routingKey, message, replyText);
+        template.setReturnsCallback(returned -> {
+            log.error("消息从交换机发送到队列失败 - 交换机: {}, 路由键: {}, 消息: {}, 回复码: {}, 失败原因: {}",
+                    returned.getExchange(),
+                    returned.getRoutingKey(),
+                    new String(returned.getMessage().getBody()),
+                    returned.getReplyCode(),
+                    returned.getReplyText());
+
             // 这里可以添加重发逻辑或记录日志
         });
 
-        // 开启强制标志，当消息无法路由到队列时，会触发ReturnCallback
+        // 消息层置为 mandatory，强制退回
         template.setMandatory(true);
 
         return template;

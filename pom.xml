@@ -17,6 +17,7 @@
         <mysql.version>8.0.33</mysql.version>
         <druid.version>1.2.8</druid.version>
         <mybaits-plus.version>3.5.3.1</mybaits-plus.version>
+        <redis.version>2.7.18</redis.version>
     </properties>
 
     <dependencyManagement>
@@ -48,6 +49,13 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybaits-plus.version}</version>
+            </dependency>
+
+            <!-- Redis -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-redis</artifactId>
+                <version>${redis.version}</version>v
             </dependency>
         </dependencies>
     </dependencyManagement>

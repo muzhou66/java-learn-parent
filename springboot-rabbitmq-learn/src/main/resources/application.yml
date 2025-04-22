@@ -19,8 +19,8 @@ spring:
     username: guest
     password: guest
     virtual-host: /
-    # 开启发送方确认
-    publisher-confirms: true
+    # 生产者确认机制，确保消息成功到达 Broker
+    publisher-confirm-type: correlated
     # 开启发送方退回
     publisher-returns: true
     listener:

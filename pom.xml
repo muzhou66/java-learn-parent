@@ -11,13 +11,19 @@
 
     <modules>
         <module>springboot-rabbitmq-learn</module>
+        <module>spirngboot-redis-learn</module>
+        <module>java-learn-common</module>
+        <module>java-basic</module>
+        <module>java-basic/m04-high-feature</module>
     </modules>
 
     <properties>
+        <project.version>1.0-SNAPSHOT</project.version>
         <mysql.version>8.0.33</mysql.version>
         <druid.version>1.2.8</druid.version>
         <mybaits-plus.version>3.5.3.1</mybaits-plus.version>
         <redis.version>2.7.18</redis.version>
+        <redisson.version>3.23.4</redisson.version>
     </properties>
 
     <dependencyManagement>
@@ -56,6 +62,27 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-redis</artifactId>
                 <version>${redis.version}</version>v
+            </dependency>
+            <!-- Redisson -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+
+
+
+
+
+
+
+
+            <!-- 项目依赖 -->
+            <dependency>
+                <groupId>com.muzhou.learn</groupId>
+                <artifactId>java-learn-common</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

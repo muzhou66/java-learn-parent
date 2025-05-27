@@ -11,6 +11,9 @@
 
     <modules>
         <module>springboot-rabbitmq-learn</module>
+        <module>elasticsearch-starter</module>
+        <module>elasticsearch-starter/es-core</module>
+        <module>springboot-rabbitmq-learn</module>
         <module>spirngboot-redis-learn</module>
         <module>java-learn-common</module>
         <module>java-basic</module>

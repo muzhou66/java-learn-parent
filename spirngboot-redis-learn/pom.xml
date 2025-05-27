@@ -12,6 +12,7 @@
 
     <artifactId>spirngboot-redis-learn</artifactId>
     <packaging>pom</packaging>
+
     <modules>
         <module>cache-core</module>
         <module>cache-autoconfigure</module>

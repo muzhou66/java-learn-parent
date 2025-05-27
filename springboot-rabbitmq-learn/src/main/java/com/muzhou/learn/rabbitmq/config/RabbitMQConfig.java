@@ -115,24 +115,27 @@ public class RabbitMQConfig {
 
         // 消息发送到交换机确认回调
         template.setConfirmCallback((correlationData, ack, cause) -> {
+            String messageId = correlationData != null ? correlationData.getId() : "";
             if (ack) {
                 log.info("消息发送到交换机成功, correlationData: {}", correlationData);
+                // 更新消息状态为已投递
+                messageLogService.updateMessageStatus(messageId, MessageStatus.DELIVERED);
             } else {
-                log.error("消息发送到交换机失败, cause: {}, correlationData: {}", cause, correlationData);
-                // 这里可以添加重发逻辑
+                log.error("消息发送到交换机失败, messageId: {}, cause: {}", messageId, cause);
+                // 失败处理：重试或记录日志
             }
         });
 
-        // 消息从交换机发送到队列失败回调
-        template.setReturnsCallback(returned -> {
-            log.error("消息从交换机发送到队列失败 - 交换机: {}, 路由键: {}, 消息: {}, 回复码: {}, 失败原因: {}",
-                    returned.getExchange(),
-                    returned.getRoutingKey(),
-                    new String(returned.getMessage().getBody()),
-                    returned.getReplyCode(),
-                    returned.getReplyText());
-
-            // 这里可以添加重发逻辑或记录日志
+        // 消息从 [交换机] 发送到 [队列] 失败回调
+        template.setReturnsCallback(returnedMessage -> {
+            log.error("消息从 Exchange 路由到 Queue 失败: exchange: {}, route: {}, replyCode: {}, replyText: {}",
+                    returnedMessage.getExchange(),
+                    returnedMessage.getRoutingKey(),
+                    returnedMessage.getReplyCode(),
+                    returnedMessage.getReplyText());
+            // 获取消息 ID
+            String messageId = returnedMessage.getMessage().getMessageProperties().getMessageId();
+            // 失败处理：重试或记录日志
         });
 
         // 消息层置为 mandatory，强制退回

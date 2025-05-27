@@ -5,6 +5,7 @@ import com.muzhou.commons.cache.core.hotkey.HotKeyHolder;
 import com.muzhou.commons.cache.core.hotkey.HotKeyListener;
 import com.muzhou.commons.cache.core.hotkey.HotKeyManager;
 import io.micrometer.core.instrument.util.NamedThreadFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 /**
  * 基于Redis的热点Key管理器实现
  */
+@Slf4j
 public class RedisHotKeyManager implements HotKeyManager {
 
     private static final String HOT_KEY_PREFIX = "multilevel:hotkey:";
@@ -51,13 +53,13 @@ public class RedisHotKeyManager implements HotKeyManager {
         // 初始加载热点key
         loadInitialHotKeys();
 
-        // 定时分析热点key
+        // 定时分析热点 key
         scheduler.scheduleWithFixedDelay(this::analyzeHotKeys,
                 properties.getInitialDelay(),
                 properties.getAnalyzeInterval(),
                 TimeUnit.SECONDS);
 
-        // 热点key预加载
+        // 热点 key 预加载
         scheduler.scheduleWithFixedDelay(this::preloadHotKeys,
                 properties.getInitialDelay() + 5, // 错开分析时间
                 properties.getPreloadInterval(),
@@ -84,10 +86,8 @@ public class RedisHotKeyManager implements HotKeyManager {
         }
     }
 
-
     /**
-     * 访问记录，每次访问 score + 1
-     * 使用 ZSet，Key 为 member，访问次数作为 score
+     * 访问统计
      */
     @Override
     public void recordAccess(String key) {
@@ -96,15 +96,15 @@ public class RedisHotKeyManager implements HotKeyManager {
             return;
         }
 
-        // 重试机制
         int retries = 0;
         while (retries < MAX_RETRIES) {
             try {
+                // ZSet [member] 访问 Key [score] 访问频次
                 redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                     connection.zSetCommands().zIncrBy(HOT_KEY_STATS_ZSET.getBytes(), 1, key.getBytes());
                     return null;
                 });
-                break; // 执行成功后跳出循环
+                break;
             } catch (Exception e) {
                 retries++;
                 if (retries >= MAX_RETRIES) {
@@ -156,7 +156,7 @@ public class RedisHotKeyManager implements HotKeyManager {
     }
 
     /**
-     * 统计分析热点 Key
+     * 统计分析
      */
     private void analyzeHotKeys() {
         if (!running.get()) {
@@ -179,7 +179,10 @@ public class RedisHotKeyManager implements HotKeyManager {
                     }
                 }
 
-                // 比较新旧热点key变化
+                // 更新热点 key 集合
+                hotKeyHolder.refreshHotKeys(newHotKeys);
+
+                // 比较新旧热点key变化，通知监听器
                 Set<String> oldHotKeys = hotKeyHolder.getHotKeys();
                 Set<String> addedKeys = new HashSet<>(newHotKeys);
                 addedKeys.removeAll(oldHotKeys);
@@ -187,14 +190,10 @@ public class RedisHotKeyManager implements HotKeyManager {
                 Set<String> removedKeys = new HashSet<>(oldHotKeys);
                 removedKeys.removeAll(newHotKeys);
 
-                // 更新热点key集合
-                hotKeyHolder.refreshHotKeys(newHotKeys);
-
-                // 通知监听器
                 notifyHotKeyChanged(addedKeys, removedKeys);
 
                 if (properties.isDebug()) {
-                    System.out.println("[HotKey] Hot key analysis result - " +
+                    log.debug("[HotKey] Hot key analysis result - " +
                             "Total: " + newHotKeys.size() +
                             ", Added: " + addedKeys +
                             ", Removed: " + removedKeys);
@@ -204,8 +203,8 @@ public class RedisHotKeyManager implements HotKeyManager {
             // 记录错误日志
             System.err.println("[HotKey] Analyze hot keys failed: " + e.getMessage());
         } finally {
-            // 重置统计
             try {
+                // 重置统计
                 redisTemplate.delete(HOT_KEY_STATS_ZSET);
             } catch (Exception e) {
                 // 记录错误日志
@@ -214,6 +213,9 @@ public class RedisHotKeyManager implements HotKeyManager {
         }
     }
 
+    /**
+     * 预加载
+     */
     private void preloadHotKeys() {
         if (!running.get()) {
             return;
@@ -224,6 +226,7 @@ public class RedisHotKeyManager implements HotKeyManager {
         boolean locked = false;
 
         try {
+            // todo:redission
             locked = redisTemplate.opsForValue().setIfAbsent(
                     lockKey,
                     "1",
@@ -246,7 +249,7 @@ public class RedisHotKeyManager implements HotKeyManager {
             // 使用并行流提高预加载效率
             hotKeys.parallelStream().forEach(key -> {
                 try {
-                    // 触发缓存加载
+                    // todo:触发缓存加载
                     Object value = redisTemplate.opsForValue().get(key);
 
                     if (value == null && properties.isDebug()) {
@@ -254,7 +257,7 @@ public class RedisHotKeyManager implements HotKeyManager {
                     }
                 } catch (Exception e) {
                     // 记录错误日志
-                    System.err.println("[HotKey] Preload failed for key: " + key + ", error: " + e.getMessage());
+                    log.error("[HotKey] Preload failed for key: " + key + ", error: " + e.getMessage());
                 }
             });
 
